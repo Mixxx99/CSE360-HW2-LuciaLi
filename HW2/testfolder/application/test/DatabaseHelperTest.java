@@ -213,6 +213,12 @@ class DatabaseHelperTest {
         System.out.println(" ");
         System.out.println("Test7.1");
 
+
+        testQuestion = new Question("testUser", "Test Question Title", "This is a test question.");
+        int questionId = databaseHelper.addNewQuestion(testQuestion);
+        testQuestion.setQuestionId(questionId);
+        System.out.println("New Question ID: " + questionId);
+        
         databaseHelper.disconnectQuestionFromUser(testQuestion.getQuestionId(), testUser.getUserName());
         System.out.println("Question ID " + testQuestion.getQuestionId() + " disconnected from user.");
 
