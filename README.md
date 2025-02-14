@@ -1,6 +1,6 @@
 # CSE360-HW2-LuciaLi
 
-#Project Name: HW2 for CSE 360
+# Project Name: HW2 for CSE 360
 
 Description
 
