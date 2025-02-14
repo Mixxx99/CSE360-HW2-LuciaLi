@@ -141,6 +141,14 @@ public class DatabaseHelper {
 	    
 	    public void disconnectQuestionFromUser(int questionID, String userName) throws SQLException {
 	        String updateQuery = "UPDATE questions SET userName = 'unknown' WHERE question_id = ? AND userName = ?";
+	        
+	    	String checkUnknownUser = "SELECT COUNT(*) FROM cse360users WHERE userName = 'unknown'";
+	    	try (Statement stmt = connection.createStatement();
+	    	     ResultSet rs = stmt.executeQuery(checkUnknownUser)) {
+	    	    if (rs.next() && rs.getInt(1) == 0) {
+	    	        throw new SQLException("Error: 'unknown' user does not exist in cse360users.");
+	    	    }
+	    	}
 
 	        try (PreparedStatement pstmt = connection.prepareStatement(updateQuery)) {
 	            pstmt.setInt(1, questionID);
@@ -154,11 +162,16 @@ public class DatabaseHelper {
 	            }
 	        }
 	    }
+	    
 
 	    
 	    public void deleteQuestionPermanently(int questionID) throws SQLException {
+	    	
+
 	        String deleteQuery = "DELETE FROM questions WHERE question_id = ?";
 
+	        
+	        
 	        try (PreparedStatement pstmt = connection.prepareStatement(deleteQuery)) {
 	            pstmt.setInt(1, questionID);
 	            int rowsDeleted = pstmt.executeUpdate();
@@ -175,32 +188,27 @@ public class DatabaseHelper {
 	
 	////////////////////////////////////////////////////////////////////////
 	    public boolean updateAnswer(int answerId, String newContent, User user) throws SQLException {
-	        // 获取用户的角色
 	        String userRole = user.getRole();
 	        String userName = user.getUserName();
-
-	        // 检查用户是否是原作者或者管理员
 	        String checkQuery = "SELECT COUNT(*) FROM answers WHERE answer_id = ? AND (userName = ? OR ? = 'admin')";
 	        try (PreparedStatement checkStmt = connection.prepareStatement(checkQuery)) {
 	            checkStmt.setInt(1, answerId);
 	            checkStmt.setString(2, userName);
-	            checkStmt.setString(3, userRole);  // 直接传 user 的 role
+	            checkStmt.setString(3, userRole);  
 	            
 	            ResultSet rs = checkStmt.executeQuery();
 	            if (rs.next() && rs.getInt(1) == 0) {
 	                System.out.println("Error: You are neither the author nor an admin!");
-	                return false; // 不是原作者也不是管理员，拒绝更新
+	                return false;
 	            }
 	        }
-
-	        // 进行更新操作
 	        String updateQuery = "UPDATE answers SET answerContent = ? WHERE answer_id = ?";
 	        try (PreparedStatement pstmt = connection.prepareStatement(updateQuery)) {
 	            pstmt.setString(1, newContent);
 	            pstmt.setInt(2, answerId);
 
 	            int rowsAffected = pstmt.executeUpdate();
-	            return rowsAffected > 0; // 成功更新返回 true
+	            return rowsAffected > 0; 
 	        }
 	    }
 
@@ -525,10 +533,10 @@ public class DatabaseHelper {
 	
 	//For test
 	public void deleteAllUsers() throws SQLException {
-	    String deleteQuery = "DELETE FROM cse360users";  // ✅ Corrected
+	    String deleteQuery = "DELETE FROM cse360users WHERE userName <> 'unknown'";
 	    try (PreparedStatement pstmt = connection.prepareStatement(deleteQuery)) {
 	        int rowsDeleted = pstmt.executeUpdate();
-	        System.out.println("✅ All users have been deleted.");
+	        System.out.println("✅ All users except 'unknown' have been deleted.");
 	    }
 	}
 }
