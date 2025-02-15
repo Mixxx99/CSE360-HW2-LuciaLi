@@ -30,7 +30,7 @@ public class DatabaseHelper {
 
 	private Connection connection = null;
 	private Statement statement = null; 
-	//	PreparedStatement pstmt
+
 
 	public void connectToDatabase() throws SQLException {
 		try {
@@ -93,13 +93,6 @@ public class DatabaseHelper {
 	            + "FOREIGN KEY (userName) REFERENCES cse360users(userName) ON DELETE SET NULL"
 	            + ")"; 
 	    statement.execute(AnswersTable);
-	    
-	 //
-	    String insertUnknownUser = "INSERT INTO cse360users (userName, password, role, email, name) "
-	                             + "SELECT 'unknown', 'unknown', 'unknown', 'unknown', 'unknown' "
-	                             + "WHERE NOT EXISTS (SELECT 1 FROM cse360users WHERE userName = 'unknown')";
-	    statement.execute(insertUnknownUser);
-
 	    
 	}
 	    //////////////////////////////////////////////////////////
@@ -255,42 +248,40 @@ public class DatabaseHelper {
 	
 	//add new users into the database.
 	public void register(User user) throws SQLException {
-		String insertUser = "INSERT INTO cse360users (userName, password, role, email, name) VALUES (?, ?, ?, ?, ?)";
-		try (PreparedStatement pstmt = connection.prepareStatement(insertUser)) {
-			pstmt.setString(1, user.getUserName());
-			pstmt.setString(2, user.getPassword());
-			pstmt.setString(3, user.getRole());
-			//////////////////////////////////////////
-			pstmt.setString(4, user.getEmail());
+	    String insertUser = "INSERT INTO cse360users (userName, password, role, email, name) VALUES (?, ?, ?, ?, ?)";
+	    
+	    try (PreparedStatement pstmt = connection.prepareStatement(insertUser)) {
+	        pstmt.setString(1, user.getUserName());
+	        pstmt.setString(2, user.getPassword());
+	        pstmt.setString(3, user.getRole());
+	        pstmt.setString(4, user.getEmail());
 	        pstmt.setString(5, user.getName());
-	        	//////////////////////////////////////////
-			pstmt.executeUpdate();
-			System.out.println("✅ New user: " + user.getUserName() +" have been added.");
-		}catch (SQLException e) {
-		    System.err.println("Database error: " + e.getMessage());
-		    e.printStackTrace();
-		}
+
+	        pstmt.executeUpdate();
+	        System.out.println("✅ New user: " + user.getUserName() + " has been added.");
+
+	        // add “unknown” as a user after admin have been added
+	        if ("admin".equals(user.getUserName())) {
+	            try (Statement stmt = connection.createStatement()) {
+	                String checkUnknownUser = "SELECT COUNT(*) FROM cse360users WHERE userName = 'unknown'";
+	                ResultSet rs = stmt.executeQuery(checkUnknownUser);
+
+	                if (rs.next() && rs.getInt(1) == 0) { // unknown not exist
+	                    String insertUnknownUser = "INSERT INTO cse360users (userName, password, role, email, name) "
+	                            + "VALUES ('unknown', 'unknown', 'unknown', 'unknown@example.com', 'Unknown')";
+	                    stmt.execute(insertUnknownUser);
+	                    System.out.println("✅ 'unknown' user has been added.");
+	                }
+	            }
+	        }
+
+	    } catch (SQLException e) {
+	        System.err.println("Database error: " + e.getMessage());
+	        e.printStackTrace();
+	    }
 	}
-	
-	
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-	// new questions in the database.
-//	public void addNewQuestion(Question question) throws SQLException {
-//		String insertQuestion = "INSERT INTO questions (userName, questionTitle, questionContent) VALUES (?, ?, ?)";
-//		try (PreparedStatement pstmt = connection.prepareStatement(insertQuestion)) {
-//			pstmt.setString(1, question.getUserName());
-//			pstmt.setString(2, question.getTitle());
-//			pstmt.setString(3, question.getContent());
-//			
-//			pstmt.executeUpdate();
-//			System.out.println("added~~ question id ： " + question.getQuestionId());
-//		}catch (SQLException e) {
-//		    System.err.println("Database error: " + e.getMessage());
-//		    e.printStackTrace();
-//		    
-//		}
-//	}
-	
 	
 	public int addNewQuestion(Question question) throws SQLException {
 	    String insertQuery = "INSERT INTO questions (userName, questionTitle, questionContent) VALUES (?, ?, ?)";
@@ -536,7 +527,8 @@ public class DatabaseHelper {
 	    String deleteQuery = "DELETE FROM cse360users WHERE userName <> 'unknown'";
 	    try (PreparedStatement pstmt = connection.prepareStatement(deleteQuery)) {
 	        int rowsDeleted = pstmt.executeUpdate();
-	        System.out.println("✅ All users except 'unknown' have been deleted.");
 	    }
 	}
+
+
 }
